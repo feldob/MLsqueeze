@@ -2,6 +2,8 @@ using Plots
 
 synth_func(x) = (x+2)*(x^2-4)
 
+check_synth_valid(x::Number,y::Number) = y > synth_func(x)
+
 x = range(-10, 10, 100_000)
 y = synth_func.(x)
 
@@ -12,12 +14,10 @@ randinrange(n::Integer) = -10 .+ rand(n) .* 20
 x = randinrange(200)
 y = randinrange(200)
 
-fx = synth_func.(x)
-
 x1, y1, x2, y2 = [], [], [], []
 
 for i in eachindex(x)
-    if y[i] > fx[i]
+    if check_synth_valid(x[i], y[i])
         push!(x1, x[i])
         push!(y1, y[i])
     else
@@ -26,7 +26,7 @@ for i in eachindex(x)
     end
 end
 
-plot!(x1,y1, seriestype=:scatter, label = "class 1")
-plot!(x2,y2, seriestype=:scatter, label = "class 2")
+plot!(x2,y2, seriestype=:scatter, label = "invalid")
+plot!(x1,y1, seriestype=:scatter, label = "valid")
 
 # png("data/synth_class.png")
