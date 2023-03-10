@@ -32,4 +32,4 @@ if !isdir(joinpath(DataDir, "derived"))
     mkdir(joinpath(DataDir, "derived"))
 end
 
-df |> CSV.write(joinpath(DataDir, "derived", "compas_mothilal.csv"))
+dfo |> CSV.write(joinpath(DataDir, "derived", "compas_mothilal.csv"))
