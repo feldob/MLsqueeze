@@ -1,0 +1,4 @@
+name = "MLsqueeze"
+uuid = "ffaf5745-c029-4f61-a191-d3d925818edf"
+authors = ["Felix Dobslaw <felix.dobslaw@miun.se>"]
+version = "0.1.0"
