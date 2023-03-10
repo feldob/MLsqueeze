@@ -1,7 +1,9 @@
 using CSV, DataFrames
 
-DataDir = "/Users/feldt/Companies/OpenData/kaggle/compas/propublicaCompassRecividism_data_fairml.csv/derived"
-const DF = CSV.read(joinpath(DataDir, "compas_mothilal.csv"), DataFrame)
+#DataDir = "/Users/feldt/Companies/OpenData/kaggle/compas/propublicaCompassRecividism_data_fairml.csv/derived"
+DataDir = read("data/CompassRawDirPath.txt", String)
+
+const DF = CSV.read(joinpath(DataDir, "derived", "compas_mothilal.csv"), DataFrame)
 
 O = "Class"
 Inps = filter(n -> n != O, names(DF))
@@ -19,7 +21,7 @@ function get_bounds(df, InputColumns)
     return lbs, hbs
 end
 
-lowerbounds, higherbounds = get_bounds(df, Inps)
+lowerbounds, higherbounds = get_bounds(DF, Inps)
 
 # As input distance we just use the Euclidean, for now. This is probably not good
 # in the general case but we just want to get going.

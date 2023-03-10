@@ -1,6 +1,7 @@
 using CSV, DataFrames
 
-DataDir = "/Users/feldt/Companies/OpenData/kaggle/compas/propublicaCompassRecividism_data_fairml.csv"
+#DataDir = "/Users/feldt/Companies/OpenData/kaggle/compas/propublicaCompassRecividism_data_fairml.csv"
+DataDir = read("data/CompassRawDirPath.txt", String)
 
 df = CSV.read(joinpath(DataDir, "propublica_data_for_fairml.csv"), DataFrame)
 
