@@ -1,3 +1,4 @@
+
 # synthetic boundary described as non-linear function
 synth_func(x) = (x+2)*(x^2-4)
 
@@ -25,16 +26,21 @@ foreach(r -> check_synth_valid(r.x1, r.x2) ? r.class = 1 : nothing, eachrow(df))
 gfs = groupby(df, :class)
 plot!(gfs[1].x1,gfs[1].x2, seriestype=:scatter, label = "invalid")
 plot!(gfs[2].x1,gfs[2].x2, seriestype=:scatter, label = "valid")
+
 ## to print plot
 # png("data/synth_class.png")
 
-## to export to CSV file
-# using CSV
-# CSV.write("data/synth.csv", df)
-
 using DecisionTree
 
-model = DecisionTreeClassifier(max_depth=4)
-fit!(model, hcat(df.x1, df.x2), df.class)
-## print decision tree
-# print_tree(model, 5)
+for depth in 2:5
+    model = DecisionTreeClassifier(max_depth=depth)
+    training = hcat(df.x1, df.x2)
+    test = training # OBS here using same data for training and testing
+    fit!(model, training, df.class)
+    df[!, "DT_d$(depth)"]=predict(model, test)
+end
+
+
+## to export to CSV file
+using CSV
+CSV.write("data/synth.csv", df)
