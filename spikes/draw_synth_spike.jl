@@ -7,7 +7,7 @@ synth_func(x) = (x+2)*(x^2-4)
 
 # expected data structure in CSV
 # Ax,Ay,Bx,By,candA1x,candA1y,candB1x,candB1y,...,candANx,candANy,candBNx,candBNy,fit1,fit2,fit3
-df = CSV.read("data/synth_boundary_set.csv", DataFrame)
+df = CSV.read(joinpath(@__DIR__, "..", "data", "synth_boundary_set_w1_w1.csv"), DataFrame)
 
 res_dir = joinpath("data","synth_run")
 
@@ -29,8 +29,10 @@ for (i, iter_row) in enumerate(eachrow(df))
     b_start_x = iter_row["Bx"]
     b_start_y = iter_row["By"]
 
-    xlims = (minimum(vcat(a_xs, b_xs)), maximum(vcat(a_xs, b_xs)))
-    ylims = (minimum(vcat(a_ys, b_ys)), maximum(vcat(a_ys, b_ys)))
+    xs = vcat(a_xs, b_xs, [a_start_x, b_start_x])
+    xlims = extrema(xs)
+    ys = vcat(a_ys, b_ys, [a_start_y, b_start_y])
+    ylims = extrema(ys)
 
     xmargin = (xlims[2] - xlims[1]) * .1
     xlims = (xlims[1] - xmargin, xlims[2] + xmargin)
@@ -63,4 +65,8 @@ for (i, iter_row) in enumerate(eachrow(df))
     _digits = digits(i) |> length
     i_fig = "$(repeat("0", 5-_digits))$i"
     savefig(p, joinpath(res_dir, "fig_$(i_fig).png"))
+    print(".")
 end
+
+# create video with something like:
+# ffmpeg -framerate 10 -i fig_%05d.png -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p output.mp4
