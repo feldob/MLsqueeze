@@ -3,14 +3,11 @@
 
 using CSV, DataFrames, StatsPlots
 
-# instantiate the synthetic boundary
 synth_func(x) = (x+2)*(x^2-4)
-x = range(-10, 10, 1_000)
-y = synth_func.(x)
 
 # expected data structure in CSV
 # Ax,Ay,Bx,By,candA1x,candA1y,candB1x,candB1y,...,candANx,candANy,candBNx,candBNy,fit1,fit2,fit3
-df = CSV.read("data/synth_run.csv", DataFrame)
+df = CSV.read("data/synth_boundary_set.csv", DataFrame)
 
 res_dir = joinpath("data","synth_run")
 
@@ -32,16 +29,37 @@ for (i, iter_row) in enumerate(eachrow(df))
     b_start_x = iter_row["Bx"]
     b_start_y = iter_row["By"]
 
-    # plot boundary, starting points for search, 
-    p = plot(x, y, xlims=(-10, 10), ylims=(-10,10), label = "boundary")
+    xlims = (minimum(vcat(a_xs, b_xs)), maximum(vcat(a_xs, b_xs)))
+    ylims = (minimum(vcat(a_ys, b_ys)), maximum(vcat(a_ys, b_ys)))
+
+    xmargin = (xlims[2] - xlims[1]) * .1
+    xlims = (xlims[1] - xmargin, xlims[2] + xmargin)
+
+    ymargin = (ylims[2] - ylims[1]) * .1
+    ylims = (ylims[1] - ymargin, ylims[2] + ymargin)
+
+    # instantiate the synthetic boundary
+    x = range(xlims[1], xlims[2], 1_000)
+    y = synth_func.(x)
+
+    p = plot(x, y, xlims=xlims, ylims=ylims, label = "boundary")
+
     plot!((a_start_x, a_start_y), seriestype=:scatter, label = "startpoint A", color = :green, markershape = :rect)
     plot!((b_start_x, b_start_y), seriestype=:scatter, label = "startpoint B", color = :red, markershape = :rect)
     plot!(a_xs, a_ys, seriestype=:scatter, label = "a candidates", color = :green)
     plot!(b_xs, b_ys, seriestype=:scatter, label = "b candidates", color = :red)
+
+    for n in 1:num_cands
+        plot!([(a_xs[n], a_ys[n]),(b_xs[n], b_ys[n])], label="", line=(nothing, :black, :solid))
+    end
+
     title!("Boundary Squeeze on Synth Classification Problem")
     xlabel!("dim 1")
     ylabel!("dim 2")
-    annotate!((8,-8,text("fitness: $(iter_row.fitness)", 14, :right, :bottom)))
+
+    text_x = xlims[1] + (xlims[2] - xlims[1]) * .9
+    text_y = ylims[1] + (ylims[2] - ylims[1]) * .1
+    annotate!((text_x,text_y,text("fitness: $(iter_row.fitness3)", 14, :right, :bottom)))
     _digits = digits(i) |> length
     i_fig = "$(repeat("0", 5-_digits))$i"
     savefig(p, joinpath(res_dir, "fig_$(i_fig).png"))
