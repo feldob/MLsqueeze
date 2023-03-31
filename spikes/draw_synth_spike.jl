@@ -7,7 +7,7 @@ synth_func(x) = (x+2)*(x^2-4)
 
 # expected data structure in CSV
 # Ax,Ay,Bx,By,candA1x,candA1y,candB1x,candB1y,...,candANx,candANy,candBNx,candBNy,fit1,fit2,fit3
-df = CSV.read(joinpath(@__DIR__, "..", "data", "synth_boundary_set_w1_w1.csv"), DataFrame)
+df = CSV.read(joinpath(@__DIR__, "..", "data", "synth_boundary_set_w5_w1.csv"), DataFrame)
 
 res_dir = joinpath("data","synth_run")
 
