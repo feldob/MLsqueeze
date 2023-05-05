@@ -147,6 +147,10 @@ function find_boundary_set(startA, startB, classA, classB, modelfunc;
         df[!, "candB$(i)x"] = Float64[]
         df[!, "candB$(i)y"] = Float64[]
     end
+    for i in 1:N
+        df[!, "classA$(i)"] = Float64[]
+        df[!, "classB$(i)"] = Float64[]
+    end
     df[!, "fitness1"] = Float64[]
     df[!, "fitness2"] = Float64[]
     df[!, "fitness3"] = Float64[]
@@ -158,6 +162,7 @@ function find_boundary_set(startA, startB, classA, classB, modelfunc;
         global BestFitness
         if fitness < BestFitness
             meta = [now(), startA[1], startA[2], startB[1], startB[2]]
+            classes = predict_classes(XYs, modelfunc)
             fitnesses = [fit1, fit2, fitness]
             # We always save the new best fitness, but if fitness difference 
             # is below 1e-4 we delete previous one with some probability.
@@ -167,7 +172,7 @@ function find_boundary_set(startA, startB, classA, classB, modelfunc;
             if fitnessdiff < 1e-4 && rand() < (fitnessdiff/1e-4)
                 delete!(df, nrow(df))
             end
-            push!(df, vcat(meta, XYs, fitnesses))
+            push!(df, vcat(meta, XYs, classes, fitnesses))
             BestFitness = fitness
         end
         return fitness
@@ -185,6 +190,8 @@ startB = Inputs[startBindex, :]
 synth_func(x) = (x+2)*(x^2-4)
 check_synth_valid(x::Number,y::Number) = y > synth_func(x) ? 1 : 0
 synth_model_func(x) = check_synth_valid(x[1], x[2])
+predict_classes(XYs, modelfunc, numargs::Int = 2) = 
+    Float64[modelfunc(view(XYs, i:(i+(numargs-1)))) for i in 1:numargs:length(XYs)]
 classA = synth_model_func(startA)
 classB = synth_model_func(startB)
 modelfunc = synth_model_func
