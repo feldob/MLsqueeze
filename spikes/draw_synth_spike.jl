@@ -19,15 +19,22 @@ cand_names_Ay = map(n -> "candA$(n)y", 1:num_cands)
 cand_names_Bx = map(n -> "candB$(n)x", 1:num_cands)
 cand_names_By = map(n -> "candB$(n)y", 1:num_cands)
 
+class_A = map(n -> "classA$(n)", 1:num_cands)
+class_B = map(n -> "classB$(n)", 1:num_cands)
+
 for (i, iter_row) in enumerate(eachrow(df))
     a_xs = iter_row[cand_names_Ax] |> collect
     a_ys = iter_row[cand_names_Ay] |> collect
     b_xs = iter_row[cand_names_Bx] |> collect
     b_ys = iter_row[cand_names_By] |> collect
+
     a_start_x = iter_row["Ax"]
     a_start_y = iter_row["Ay"]
     b_start_x = iter_row["Bx"]
     b_start_y = iter_row["By"]
+
+    a_cl = iter_row[class_A] |> collect
+    b_cl = iter_row[class_B] |> collect
 
     xs = vcat(a_xs, b_xs, [a_start_x, b_start_x])
     xlims = extrema(xs)
@@ -48,8 +55,29 @@ for (i, iter_row) in enumerate(eachrow(df))
 
     plot!((a_start_x, a_start_y), seriestype=:scatter, label = "startpoint A", color = :green, markershape = :rect)
     plot!((b_start_x, b_start_y), seriestype=:scatter, label = "startpoint B", color = :red, markershape = :rect)
-    plot!(a_xs, a_ys, seriestype=:scatter, label = "a candidates", color = :green)
-    plot!(b_xs, b_ys, seriestype=:scatter, label = "b candidates", color = :red)
+
+    color_a = map(cl -> cl == 0 ? :red : :green, a_cl)
+    color_b = map(cl -> cl == 0 ? :red : :green, b_cl)
+
+    for color in [:green, :red]
+        # map the color indexes to all those a and b pairs that qualify
+        c_a_is = findall(c->c==color, color_a)
+        c_b_is = findall(c->c==color, color_b)
+
+        a_xs_class = a_xs[c_a_is]
+        a_ys_class = a_ys[c_a_is]
+        b_xs_class = b_xs[c_b_is]
+        b_ys_class = b_ys[c_b_is]
+
+        # if color == :green
+        #     println(a_xs_class)
+        #     println(b_xs_class)
+        # end
+
+        plot!(a_xs_class, a_ys_class, seriestype=:scatter, label = "", color = color)
+        plot!(b_xs_class, b_ys_class, seriestype=:scatter, label = "", color = color)
+    end
+
 
     for n in 1:num_cands
         plot!([(a_xs[n], a_ys[n]),(b_xs[n], b_ys[n])], label="", line=(nothing, :black, :solid))
