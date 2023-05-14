@@ -1,5 +1,6 @@
 using CSV, DataFrames
 using BlackBoxOptim
+
 # a search algorithm that creates a diverse set of boundary candidates.
 # 1. import training dataset (binary, tableau, continuous inputs, 2d)
 # 2. randomly sample input pairs from both categories (1/0).
@@ -96,32 +97,54 @@ function draw_init_population(Class0Points, Class1Points, N=20)
     return vcat(A,B)
 end
 
-cands = []
+function diverse_bcs(fitness::Function, iterations::Int=500, initial_candidates::Int=20)
+    cands = []
+    removenext = 1
+    doremovenext = true
+    incumbent_diversity_diff = 0
+    for i in 1:iterations
+        InitPopulation = draw_init_population(Class0Points, Class1Points) # FIXME generalize
+        res = bboptimize(fitness; SearchRange = SearchRangePair,
+                                    CallbackInterval = 0.0,
+                                    CallbackFunction = mycallback,  # FIXME generalize
+                                    MaxTime = .3,
+                                    Population = InitPopulation)
+        cand = best_candidate(res)
+        #TODO have a check for whether the search was successful... if points too far apart, not successf. also interesting - what are those cases? -> investigate.
 
-global removenext = 1
-for i in 1:1000
-    InitPopulation = draw_init_population(Class0Points, Class1Points)
-    res = bboptimize(fitness_function; SearchRange = SearchRangePair, 
-                                CallbackInterval = 0.0,
-                                CallbackFunction = mycallback,
-                                MaxTime = .3,
-                                Population = InitPopulation)
-    cand = best_candidate(res)
-    #TODO have a check for whether the search was successful... if points too far apart, not successf. also interesting - what are those cases? -> investigate.
-    cand |> println
+        if length(cands) < initial_candidates + 1
+            push!(cands, cand)
+        else
+            if !doremovenext
+                push!(cands, cands[removenext])
+                doremovenext = true
+            end
 
-    if length(cands) < 41
-        push!(cands, cand)
-    else
-        cands[removenext] = cand
-        apoints = map(c -> c[1:2], cands)
-        distances = pairwise(EuclideanDist, apoints)
-        global removenext = argmin(sum(sort(distances, dims=2)[:,2:3], dims=2)[:,1]) # remove closest to its two neighbor points (2d boundary has 2 neighbor points)
+            cands[removenext] = cand
+            apoints = map(c -> c[1:2], cands)
+            distances = pairwise(EuclideanDist, apoints)
+            neighbordistancesums = sum(sort(distances, dims=2)[:,2:3], dims=2)[:,1]
+
+            diversity_diff = sum(neighbordistancesums) / length(cands)
+
+            if incumbent_diversity_diff < diversity_diff
+                incumbent_diversity_diff = diversity_diff
+                doremovenext = false
+            end
+
+            removenext = argmin(neighbordistancesums) # remove closest to its two neighbor points (2d boundary has 2 neighbor points)
+        end
+        "************ $i" |> println
     end
-    "************ $i" |> println
+
+    if doremovenext
+        cands = cands[setdiff(1:end, removenext)] # ensure that the very last "removenext" is respected
+    end
+
+    return cands
 end
 
-cands = cands[setdiff(1:end, removenext)] # ensure that the very last "removenext" is respected
+cands = diverse_bcs(fitness_function, 1000, 20)
 
 using StatsPlots
 
