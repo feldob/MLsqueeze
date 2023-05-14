@@ -86,7 +86,7 @@ function mycallback(c::BlackBoxOptim.OptRunController)
     end
 end
 
-function draw_init_population(Class0Points, Class1Points, N=10)
+function draw_init_population(Class0Points, Class1Points, N=20)
     as = collect(Iterators.flatten(rand(Class0Points, N)))
     bs = collect(Iterators.flatten(rand(Class1Points, N)))
 
@@ -98,32 +98,30 @@ end
 
 cands = []
 
-global removenext = 10
-for i in 1:10_000
+global removenext = 1
+for i in 1:1000
     InitPopulation = draw_init_population(Class0Points, Class1Points)
     res = bboptimize(fitness_function; SearchRange = SearchRangePair, 
                                 CallbackInterval = 0.0,
                                 CallbackFunction = mycallback,
-                                MaxTime = 5.0,
+                                MaxTime = .3,
                                 Population = InitPopulation)
     cand = best_candidate(res)
     #TODO have a check for whether the search was successful... if points too far apart, not successf. also interesting - what are those cases? -> investigate.
     cand |> println
 
-    #push!(cands, cand)
-
-    if length(cands) < 20
+    if length(cands) < 41
         push!(cands, cand)
     else
         cands[removenext] = cand
         apoints = map(c -> c[1:2], cands)
         distances = pairwise(EuclideanDist, apoints)
-        # partialdistances = map(i -> sum(distances[:,i]), 1:size(distances, 1))
-        # global removenext = argmin(partialdistances) # gave surprisingly bad results...
-        global removenext = argmin(sort(distances, dims=2)[:,2])
+        global removenext = argmin(sum(sort(distances, dims=2)[:,2:3], dims=2)[:,1]) # remove closest to its two neighbor points (2d boundary has 2 neighbor points)
     end
     "************ $i" |> println
 end
+
+cands = cands[setdiff(1:end, removenext)] # ensure that the very last "removenext" is respected
 
 using StatsPlots
 
