@@ -33,7 +33,7 @@ randinrange(n::Integer) = -20 .+ rand(n) .* 40
 
 using DataFrames
 
-npoints = 1000
+npoints = 100
 df = DataFrame()
 df.x1 = randinrange(npoints)
 df.x2 = randinrange(npoints)
@@ -54,8 +54,8 @@ for depth in 2:5
     model = DecisionTreeClassifier(max_depth=depth)
     training = hcat(df.x1, df.x2)
     test = training # OBS here using same data for training and testing
-    fit!(model, training, df.class)
-    df[!, "DT_d$(depth)"]=predict(model, test)
+    DecisionTree.fit!(model, training, df.class)
+    df[!, "DT_d$(depth)"]=DecisionTree.predict(model, test)
 end
 
 

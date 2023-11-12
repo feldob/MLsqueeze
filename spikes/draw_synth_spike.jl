@@ -69,11 +69,6 @@ for (i, iter_row) in enumerate(eachrow(df))
         b_xs_class = b_xs[c_b_is]
         b_ys_class = b_ys[c_b_is]
 
-        # if color == :green
-        #     println(a_xs_class)
-        #     println(b_xs_class)
-        # end
-
         plot!(a_xs_class, a_ys_class, seriestype=:scatter, label = "", color = color)
         plot!(b_xs_class, b_ys_class, seriestype=:scatter, label = "", color = color)
     end
