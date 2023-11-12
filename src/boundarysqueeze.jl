@@ -25,8 +25,6 @@ function pd_fitness(_classifier::Function; dist_output = isdifferent, Delta = 1e
     return (x::Vector{Float64}) -> begin
         i1 = x[1:nargs(_classifier)]
         i2 = x[(nargs(_classifier)+1):end]
-        i1 |> println
-        i2 |> println
         o1 = _classifier(i1...)
         o2 = _classifier(i2...)
         pd(i1, i2, o1, o2; dist_output, Delta)
