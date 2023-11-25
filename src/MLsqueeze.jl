@@ -38,6 +38,7 @@ export
         delta,
         left,
         right,
+        isminimal,
         apply,
         todataframe,
 

@@ -2,7 +2,7 @@
 # synthetic boundary described as non-linear function
 synth_func(x) = (x+2)*(x^2-4)
 
-check_synth_valid(x::Number,y::Number) = y > synth_func(x)
+#check_synth_valid(x::Number,y::Number) = y > synth_func(x)
 
 x = range(-10, 10, 1_000)
 y = synth_func.(x)

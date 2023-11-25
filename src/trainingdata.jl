@@ -126,9 +126,9 @@ function getmodelsut(td::TrainingData; model, fit)
     function_body_expr = eval(Meta.parse(exprstring))
 
     anon_func_expr = Expr(:->, param_tuple_expr, function_body_expr)
+
     return eval(anon_func_expr)
 end
-
 
 # # TODO seemingly "the standard of doing ML with Julia", but veeeery slow.
 # TODO no automatic extraction of the evaluation function with correct names ( requires manual setting so far).

@@ -2,9 +2,23 @@ struct BoundaryExposer
     td::TrainingData
     sut::Function
     bs::BoundarySqueeze
+
+    function BoundaryExposer(td::TrainingData, sut::Function, bs::BoundarySqueeze)
+        # ensure compatible input type (all inputs) for BlackBoxOptim
+        for ic in inputcols(td)
+            td.df[:, ic] = convert(Vector{Float64}, td.df[:, ic])
+        end
+
+        return new(td, sut, bs)
+    end
 end
 
 sut(be::BoundaryExposer) = be.sut
+isminimal(be::BoundaryExposer, bc::BoundaryCandidate) = isminimal(be.bs, bc)
+unique_outputs(be::BoundaryExposer) = unique_outputs(be.td)
+tdframe(be::BoundaryExposer) = be.td.df
+outputcol(be::BoundaryExposer) = outputcol(be.td)
+inputcols(be::BoundaryExposer) = inputcols(be.td)
 
 function getcandidate(df, inputs::Vector{Symbol})
     idx = rand(1:nrow(df))
@@ -15,7 +29,7 @@ function apply_one_vs_all(be::BoundaryExposer; MaxTime::Int,
                                                 iterations::Int,
                                                 initial_candidates::Int)
     cands = BoundaryCandidate[]
-    for uo in unique_outputs(be.td)
+    for uo in unique_outputs(be)
         onevsuo = (a, b) -> ((a == uo && b != uo) || (b == uo && a != uo))
         newcands = apply(be; MaxTime, iterations, initial_candidates, dist_output = onevsuo)
         cands = vcat(cands, newcands)
@@ -28,7 +42,8 @@ function apply(be::BoundaryExposer; MaxTime=3::Int,
                                     iterations::Int=500,
                                     initial_candidates::Int=20,
                                     dist_output = isdifferent,
-                                    one_vs_all::Bool=false)
+                                    one_vs_all::Bool=false,
+                                    optimizefordiversity::Bool=true)
     if one_vs_all
         return apply_one_vs_all(be; MaxTime, iterations, initial_candidates)
     end
@@ -37,9 +52,9 @@ function apply(be::BoundaryExposer; MaxTime=3::Int,
     removenext = 1
     doremovenext = true
     incumbent_diversity_diff = 0
-    inputs = inputcols(be.td)
+    inputs = inputcols(be)
 
-    gfs = groupby(be.td.df, outputcol(be.td))
+    gfs = groupby(tdframe(be), outputcol(be))
     for i in 1:iterations
         first, second = sample(1:length(gfs), 2; replace = false)
         init1 = getcandidate(gfs[first], inputs)
@@ -47,7 +62,7 @@ function apply(be::BoundaryExposer; MaxTime=3::Int,
         cand = apply(be.bs, sut(be), init1, init2; MaxTime, dist_output)
         
         #TODO have a check for whether the search was successful... if points too far apart, not successf. also interesting - what are those cases? -> investigate.
-        if length(cands) < initial_candidates + 1
+        if !optimizefordiversity || length(cands) < initial_candidates + 1
             push!(cands, cand)
         else
             if !doremovenext
@@ -71,7 +86,7 @@ function apply(be::BoundaryExposer; MaxTime=3::Int,
         "************ $i" |> println
     end
 
-    if doremovenext
+    if optimizefordiversity && doremovenext
         cands = cands[setdiff(1:end, removenext)] # ensure that the very last "removenext" is respected
     end
 

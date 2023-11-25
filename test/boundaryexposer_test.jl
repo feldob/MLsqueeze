@@ -4,7 +4,9 @@
     candidates = apply(be; iterations=10, initial_candidates=5)
 
     @test length(candidates) > 0
-    @test all([Distances.evaluate(Euclidean(), left(c), right(c)) < delta(be.bs) for c in candidates])
+    for c in candidates
+        @test isminimal(be, c)
+    end
 
     df = todataframe(candidates, bmi_classification)
     plots(df, MLsqueeze.ranges(td))
@@ -35,18 +37,26 @@ end
     # create a model that can be used for classification
     modelsut = getmodelsut(td; model=DecisionTree.DecisionTreeClassifier(max_depth=3), fit=DecisionTree.fit!)
 
-    be = BoundaryExposer(td, modelsut, BoundarySqueeze(MLsqueeze.ranges(td)))
+    Delta = abs.(map(r -> r[2] - r[1], ranges)) ./ 1000 # create some reasonable small delta for acceptance depending on size of the range
+    bs = BoundarySqueeze(MLsqueeze.ranges(td); Delta)
+    be = BoundaryExposer(td, modelsut, bs)
     candidates = apply(be; iterations=10, initial_candidates=5, one_vs_all=false)
     df = todataframe(candidates, modelsut; output)
 
     plots(df, MLsqueeze.ranges(td); output)    
 end
 
-@testset "classifier test (categorical and ordinal titanic)" begin
+@testset "classifier test (ordinal titanic)" begin
     df = CSV.read("../data/titanic.csv", DataFrame)
     
     # TODO until missing handling not supported, filter out
+    # ------------
     filter!(r -> !ismissing(r.Age), df)
+    df.Age = convert(Vector{Float64}, df.Age)
+
+    filter!(r -> !ismissing(r.Pclass), df)
+    df.Pclass = convert(Vector{Float64}, df.Pclass)
+    # ------------
 
     inputs = [:Pclass, :Age]
     output = :Survived
@@ -55,14 +65,15 @@ end
 
     td = TrainingData("titanic", df; inputs, output)
 
-    # TODO do even for categorical, such as :Sex
-
+    # TODO do even for categorical, such as :Sex (setup another test)
     modelsut = getmodelsut(td; model=DecisionTree.DecisionTreeClassifier(max_depth=3), fit=DecisionTree.fit!)
+    Delta = abs.(map(r -> r[2] - r[1], ranges)) ./1000 # create some reasonable small delta for acceptance depending on size of the range
+    bs = BoundarySqueeze(MLsqueeze.ranges(td); Delta)
+    be = BoundaryExposer(td, modelsut, bs)
 
-    be = BoundaryExposer(td, modelsut, BoundarySqueeze(MLsqueeze.ranges(td)))
     candidates = apply(be; iterations=10, initial_candidates=5, one_vs_all=false)
     df = todataframe(candidates, modelsut; output)
 
-    plots(df, MLsqueeze.ranges(td); output)    
+    plots(df, MLsqueeze.ranges(td); output)
 end
 

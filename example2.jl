@@ -1,48 +1,49 @@
-using CSV, DecisionTree, DataFrames, MLJ, BetaML
+using MLsqueeze, CSV, DataFrames
 
-function somefunc(a, b::Float64, c::Float64)
-    println(a,b,c)
-end
+df = CSV.read("data/titanic.csv", DataFrame)
 
-function init()
-    inputs = [:SepalLengthCm, :SepalWidthCm]
-    output = :Species
-    
-    model = DecisionTree.DecisionTreeClassifier(max_depth=3)
-    
-    df = CSV.read("data/Iris.csv", DataFrame)
-    
-    training = hcat([df[!, i] for i in inputs]...) # OBS using all data for training
-    DecisionTree.fit!(model, training, df[!, output])
-    
-    param_tuple_expr = Expr(:tuple, Float64[:($(Symbol(p))::Float64 ) for p in inputs]...)
-    
-    # TODO change to take in the array in the function?
-    function_body_expr = :(somefunc(model, $(inputs...)))
-    # function_body_expr = :(println(model, $(join(inputs, ", "))))
-    # function_body_expr = :(DecisionTree.predict(model, $(join(inputs, ", "))))
-    
-    # function_body_expr = :(DecisionTree.predict(model, [$(inputs)]))
-    
-    DecisionTree.predict(model, [10.2, 20.2])
+filter!(r -> !ismissing(r.Age), df)
+df.Age = convert(Vector{Float64}, df.Age)
 
-    anon_func_expr = Expr(:->, param_tuple_expr, function_body_expr)
-    
-    return anon_func_expr
-end
+filter!(r -> !ismissing(r.Pclass), df)
+df.Pclass = convert(Vector{Float64}, df.Pclass)
 
-# anon_func = eval(init())
+df.Sex = map(d -> d == "male" ? 0.0 : 1.0, df.Sex)
+df.Sex = convert(Vector{Float64}, df.Sex)
 
-# anon_func([10.2, 20.3])
+inputs = [:Pclass, :Age, :Sex, :Fare, :Parch, :SibSp]
+output = :Survived
 
-inputs = [:SepalLengthCm, :SepalWidthCm]
-output = :Species
 
-model = DecisionTree.DecisionTreeClassifier(max_depth=3)
+td = TrainingData("titanic", df; inputs, output)
 
-df = CSV.read("data/Iris.csv", DataFrame)
+# TODO do even for categorical, such as :Sex (setup another test)
+modelsut = getmodelsut(td; model=DecisionTree.DecisionTreeClassifier(max_depth=3), fit=DecisionTree.fit!)
+ranges = deriveranges(df, inputs)
+Delta = abs.(map(r -> r[2] - r[1], ranges)) ./ 1000 # create some reasonable small delta for acceptance depending on size of the range
+bs = BoundarySqueeze(MLsqueeze.ranges(td); Delta)
+be = BoundaryExposer(td, modelsut, bs)
 
-training = hcat([df[!, i] for i in inputs]...) # OBS using all data for training
-DecisionTree.fit!(model, training, df[!, output])
+candidates = apply(be; iterations=200, initial_candidates=10)
+df2 = df
+df = todataframe(candidates, modelsut; output)
 
-param_tuple_expr = Expr(:tuple, Float64[(p::Float64 ) for p in inputs]...)
+p = plots(df, MLsqueeze.ranges(td); output)
+
+df.Pclass = round.(Int, df.Pclass)
+df.Age = round.(Int, df.Age)
+df.Parch = round.(Int, df.Parch)
+df.Fare = round.(df.Fare, digits=2)
+df.SibSp = round.(Int, df.SibSp)
+df.Sex = map(s -> s < .5 ? "male" : "female", df.Sex)
+
+df.n_Pclass = round.(Int, df.n_Pclass)
+df.n_Age = round.(Int, df.n_Age)
+df.n_Parch = round.(Int, df.n_Parch)
+df.n_Fare = round.(df.n_Fare, digits=2)
+df.n_SibSp = round.(Int, df.n_SibSp)
+df.n_Sex = map(s -> s < .5 ? "male" : "female", df.n_Sex)
+
+sort!(df, [:Sex, :Pclass, :Age, :Parch, :SibSp])
+
+df
