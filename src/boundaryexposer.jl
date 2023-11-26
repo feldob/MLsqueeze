@@ -3,7 +3,7 @@ struct BoundaryExposer
     sut::Function
     bs::BoundarySqueeze
 
-    function BoundaryExposer(td::TrainingData, sut::Function, bs::BoundarySqueeze)
+    function BoundaryExposer(td::TrainingData, sut::Function, bs::BoundarySqueeze=BoundarySqueeze(td))
         # ensure compatible input type (all inputs) for BlackBoxOptim
         for ic in inputcols(td)
             td.df[:, ic] = convert(Vector{Float64}, td.df[:, ic])
@@ -29,6 +29,9 @@ function apply_one_vs_all(be::BoundaryExposer; MaxTime::Int,
                                                 iterations::Int,
                                                 initial_candidates::Int)
     cands = BoundaryCandidate[]
+    # TODO easier to create pairs and then search accordingly?
+    #   in the case if a binary output, this runs otherwise twice
+    # TODO does the random selection of starting points also require adjustment so that onevsuo is respected? (different outputs there of the dist function as well)
     for uo in unique_outputs(be)
         onevsuo = (a, b) -> ((a == uo && b != uo) || (b == uo && a != uo))
         newcands = apply(be; MaxTime, iterations, initial_candidates, dist_output = onevsuo)
@@ -54,6 +57,8 @@ function apply(be::BoundaryExposer; MaxTime=3::Int,
     incumbent_diversity_diff = 0
     inputs = inputcols(be)
 
+    #TODO the selection should consider that in one-vs-all one from each side should be chosen (maybe a tailored implementation!?).
+    # one solution is to use the diversity function as a way to separate inputs out
     gfs = groupby(tdframe(be), outputcol(be))
     for i in 1:iterations
         first, second = sample(1:length(gfs), 2; replace = false)

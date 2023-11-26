@@ -11,9 +11,10 @@ using MLsqueeze
 td = TrainingData(check_synth_valid; ranges)
 bs = BoundarySqueeze(td)
 
+#TODO one_vs_all is broken. It runs more often than it needs, and the result is not well diversified.
 # 1a) diversity
 be = BoundaryExposer(td, check_synth_valid, bs) # instantiate search alg
-candidates = apply(be; iterations, initial_candidates) # search and collect candidates
+candidates = apply(be; iterations, initial_candidates, one_vs_all=true) # search and collect candidates
 
 df_gt_diversity = todataframe(candidates, check_synth_valid; output)
 
@@ -53,19 +54,3 @@ title!(p_div_gt, "Boundary Candidates (diversity in search)")
 
 png(p_div_gt, "data/synth_diversity_gt")
 png(p_random_gt, "data/synth_random_gt")
-
-
-
-# using DecisionTree # with model
-
-# # 2a) diversity
-# modelsut = getmodelsut(td; model=DecisionTree.DecisionTreeClassifier(max_depth=7), fit=DecisionTree.fit!)
-# be = BoundaryExposer(td, modelsut, bs) # instantiate search alg
-# candidates = apply(be; iterations, initial_candidates) # search and collect candidates
-
-# df_model_diversity = todataframe(candidates, modelsut; output)
-# # b) random
-# be = BoundaryExposer(td, modelsut, bs) # instantiate search alg
-# candidates = apply(be; iterations, initial_candidates, optimizefordiversity=false) # search and collect candidates
-
-# df_model_random = todataframe(candidates, modelsut; output)
