@@ -29,12 +29,12 @@ function apply_one_vs_all(be::BoundaryExposer; MaxTime::Int,
                                                 iterations::Int,
                                                 initial_candidates::Int)
     cands = BoundaryCandidate[]
-    # TODO easier to create pairs and then search accordingly?
-    #   in the case if a binary output, this runs otherwise twice
-    # TODO does the random selection of starting points also require adjustment so that onevsuo is respected? (different outputs there of the dist function as well)
     for uo in unique_outputs(be)
-        onevsuo = (a, b) -> ((a == uo && b != uo) || (b == uo && a != uo))
-        newcands = apply(be; MaxTime, iterations, initial_candidates, dist_output = onevsuo)
+        df_uo = deepcopy(be.td.df)
+        df_uo.tempoutput = map(o -> o == uo ? uo : "other", df_uo[:, outputcol(be)])
+        td = TrainingData(sutname(be.td), df_uo; inputs = inputcols(be), output=:tempoutput)
+        temp_be = BoundaryExposer(td, be.sut)
+        newcands = apply(temp_be; MaxTime, iterations, initial_candidates)
         cands = vcat(cands, newcands)
     end
 
@@ -57,8 +57,6 @@ function apply(be::BoundaryExposer; MaxTime=3::Int,
     incumbent_diversity_diff = 0
     inputs = inputcols(be)
 
-    #TODO the selection should consider that in one-vs-all one from each side should be chosen (maybe a tailored implementation!?).
-    # one solution is to use the diversity function as a way to separate inputs out
     gfs = groupby(tdframe(be), outputcol(be))
     for i in 1:iterations
         first, second = sample(1:length(gfs), 2; replace = false)
