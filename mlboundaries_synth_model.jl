@@ -21,6 +21,15 @@ df_model_diversity = todataframe(candidates, modelsut; output)
 
 CSV.write("data/synth_model_points_div.csv", df_model_diversity)
 
+# 2a) diversity
+modelsut = getmodelsut(td; model=DecisionTree.DecisionTreeClassifier(max_depth=7), fit=DecisionTree.fit!)
+be = BoundaryExposer(td, modelsut) # instantiate search alg
+candidates = apply(be; iterations, initial_candidates) # search and collect candidates
+
+df_model_diversity = todataframe(candidates, modelsut; output)
+
+CSV.write("data/synth_model_points_div.csv", df_model_diversity)
+
 #high resolution DT boundary
 iterations = 10000
 candidates = apply(be; iterations, initial_candidates, optimizefordiversity=false) # search and collect candidates
@@ -35,6 +44,8 @@ df_model_random = todataframe(candidates, modelsut; output)
 CSV.write("data/synth_model_points_random.csv", df_model_random)
 
 using StatsPlots
+
+synth_func(x) = (x+2)*(x^2-4)
 
 x = range(-10, 10, 1_000)
 y = synth_func.(x)

@@ -5,6 +5,7 @@ using CSV,
         StatsPlots,
         Combinatorics,
         Distances,
+        Statistics,
         BlackBoxOptim,
         StatsBase,
         DecisionTree, # testing only
@@ -41,6 +42,8 @@ export
         isminimal,
         apply,
         todataframe,
+
+        two_nearest_neighbor_distances,
 
         BoundaryExposer
 

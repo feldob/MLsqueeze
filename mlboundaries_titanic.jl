@@ -34,19 +34,16 @@ using DecisionTree
 modelsut = getmodelsut(td; model=DecisionTree.DecisionTreeClassifier(max_depth=3), fit=DecisionTree.fit!)
 
 be = BoundaryExposer(td, modelsut, bs) # instantiate search alg
-candidates = apply(be; iterations=2000, initial_candidates=10) # search and collect candidates
 
+# rand
+candidates = apply(be; iterations=25, initial_candidates=10, optimizefordiversity=false) # search and collect candidates
 df = todataframe(candidates, modelsut; output)
-
-CSV.write("data/titanic_bcs_raw.csv", df)
-
-candidates = apply(be; iterations=20, initial_candidates=10, optimizefordiversity=false) # search and collect candidates
-
-df = todataframe(candidates, modelsut; output)
-
 CSV.write("data/titanic_bcs_raw_random.csv", df)
 
-p = plots(df, MLsqueeze.ranges(td); output)
+# div
+candidates = apply(be; iterations=2000, initial_candidates=10) # search and collect candidates
+df = todataframe(candidates, modelsut; output)
+CSV.write("data/titanic_bcs_raw.csv", df)
 
 df.Pclass = round.(Int, df.Pclass)
 df.Age = round.(Int, df.Age)

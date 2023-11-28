@@ -10,7 +10,8 @@ td = TrainingData("iris", df_iris; inputs, output)
 modelsut = getmodelsut(td; model=DecisionTree.DecisionTreeClassifier(max_depth=7), fit=DecisionTree.fit!)
 bs = BoundarySqueeze(td)
 be = BoundaryExposer(td, modelsut, bs)
-iterations=38
+
+iterations=43
 initial_candidates=10
 
 candidates = apply(be; iterations, initial_candidates, optimizefordiversity=false)
