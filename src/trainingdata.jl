@@ -37,7 +37,7 @@ struct TrainingData
 
     function TrainingData(name, df::DataFrame;
                                     inputs=defaultinputs(df),
-                                    output = names(df)[end])
+                                    output = Symbol(names(df)[end]))
         return new(name, assertdataframe(df; inputs, output), inputs, output, deriveranges(df, inputs))
     end
 

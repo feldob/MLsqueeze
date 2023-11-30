@@ -46,7 +46,8 @@ function apply(be::BoundaryExposer; MaxTime=3::Int,
                                     initial_candidates::Int=20,
                                     dist_output = isdifferent,
                                     one_vs_all::Bool=false,
-                                    optimizefordiversity::Bool=true)
+                                    optimizefordiversity::Bool=true,
+                                    add_new::Bool=true)
     if one_vs_all
         return apply_one_vs_all(be; MaxTime, iterations, initial_candidates)
     end
@@ -81,7 +82,9 @@ function apply(be::BoundaryExposer; MaxTime=3::Int,
 
             if incumbent_diversity_diff < diversity_diff
                 incumbent_diversity_diff = diversity_diff
-                doremovenext = false
+                if add_new
+                    doremovenext = false
+                end
             end
 
             removenext = argmin(neighbordistancesums) # remove closest to its two neighbor points (2d boundary has 2 neighbor points)
