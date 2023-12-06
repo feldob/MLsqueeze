@@ -17,6 +17,7 @@ export
         bmi,
         bmi_classification,
         BMI_RANGES,
+        synth_func,
         check_synth_valid,
 
         defaultranges,
@@ -44,6 +45,7 @@ export
         todataframe,
 
         two_nearest_neighbor_distances,
+        two_nearest_neighbor_distances_stats,
 
         BoundaryExposer
 

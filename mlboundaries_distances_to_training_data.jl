@@ -43,6 +43,7 @@ function cal_distances(dataset, n_cand, method)
 
     df = DataFrame(bc_id = Int[], output = eltype(dataset.output)[], distance = Float64[])
 
+    df_inputs = delete!(similar(first(output_grouped_bcs))[:, dataset.inputs], :)
     bc_id = 0
     for bcs_group in output_grouped_bcs
         output_v = first(bcs_group)[output]
@@ -51,6 +52,7 @@ function cal_distances(dataset, n_cand, method)
         # for each left bc, calculate the distance to all td entries in left
         distances_left = map(bc -> nearest_neighbor_distance(bc, td_left), eachrow(bcs_left))
         foreach(p -> push!(df, (p[1]+bc_id, output_v, p[2])) , enumerate(distances_left))
+        foreach(r -> push!(df_inputs, Tuple(r)) , eachrow(bcs_left))
         
         n_output_v = first(bcs_group)[n_output]
         td_right = og_dict[n_output_v][:, dataset.inputs] |> Matrix
@@ -58,8 +60,12 @@ function cal_distances(dataset, n_cand, method)
         # for each right bc, calculate the distance to all td entries in right
         distances_right = map(bc -> nearest_neighbor_distance(bc, td_right), eachrow(bcs_right))
         foreach(p -> push!(df, (p[1]+bc_id, n_output_v, p[2])) , enumerate(distances_right))
+        foreach(r -> push!(df_inputs, Tuple(r)) , eachrow(bcs_right))
+
         bc_id += nrow(bcs_group)
     end
+
+    foreach(n -> df[:,n] = df_inputs[:,n], names(df_inputs))
     return df
 end
 

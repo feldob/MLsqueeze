@@ -175,8 +175,13 @@ function plots(df::DataFrame, limits; output=:output)
     return plts
 end
 
+
 function two_nearest_neighbor_distances(df::DataFrame, inputs::Vector{Symbol})
     d = pairwise(Euclidean(), Matrix(df[:, inputs])')
-    d_nn = sort!(d, dims=2)[:, 2:3]
+    return sort!(d, dims=2)[:, 2:3]
+end
+
+function two_nearest_neighbor_distances_stats(df::DataFrame, inputs::Vector{Symbol})
+    d_nn = two_nearest_neighbor_distances(df, inputs)
     return mean(d_nn), std(d_nn)
 end

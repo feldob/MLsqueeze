@@ -14,7 +14,7 @@ bs = BoundarySqueeze(td)
 #TODO one_vs_all is broken. It runs more often than it needs, and the result is not well diversified.
 # 1a) diversity
 be = BoundaryExposer(td, check_synth_valid, bs) # instantiate search alg
-candidates = apply(be; iterations, initial_candidates, one_vs_all=true) # search and collect candidates
+candidates = apply(be; iterations, initial_candidates) # search and collect candidates
 
 df_gt_diversity = todataframe(candidates, check_synth_valid; output)
 
