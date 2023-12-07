@@ -23,19 +23,13 @@ function nearest_neighbor_distance(bc::DataFrameRow, td)
     return sort(d)[2]
 end
 
-function cal_distances(dataset, n_cand, method)
+
+function extract_distances_for(df_bcs, dataset)
     df = CSV.read("data/$(dataset.td_id).csv", DataFrame)
 
     og_dict = Dict()
     output_grouped = groupby(df, dataset.output)
     foreach(gf -> og_dict[first(gf)[dataset.output]] = gf, output_grouped)
-
-    file = "data/expresults/$(dataset.id)_bcs_$(method)_$(n_cand)_pp.csv"
-    if !isfile(file)
-        file = "data/expresults/$(dataset.id)_bcs_$(method)_$(n_cand).csv"
-    end
-
-    df_bcs = CSV.read(file, DataFrame)
 
     output = string(dataset.output)
     n_output = "n_$(dataset.output)"
@@ -69,13 +63,42 @@ function cal_distances(dataset, n_cand, method)
     return df
 end
 
-for ds in datasets
-    println(ds.id)
-    for n_cand in [10, 20]
-        df_d = cal_distances(ds, n_cand, "div")
-        df_r = cal_distances(ds, n_cand, "random")
+function bcs(dataset, n_cand, method)
+    file = "data/expresults/$(dataset.id)_bcs_$(method)_$(n_cand)_pp.csv"
+    if !isfile(file)
+        file = "data/expresults/$(dataset.id)_bcs_$(method)_$(n_cand).csv"
+    end
 
-        CSV.write("data/expresults/bc_td_distances/$(ds.id)_bcs_div_$(n_cand).csv", df_d)
-        CSV.write("data/expresults/bc_td_distances/$(ds.id)_bcs_random_$(n_cand).csv", df_r)
+    return CSV.read(file, DataFrame)
+end
+
+function cal_distances(file, dataset)
+    df_bcs = CSV.read(file, DataFrame)
+    return extract_distances_for(df_bcs, dataset)
+end
+
+function cal_distances(dataset, n_cand, method)
+    df_bcs = bcs(dataset, n_cand, method)
+    return extract_distances_for(df_bcs, dataset)
+end
+
+function extract_all_distances_for_experiments()
+    for ds in datasets
+        println(ds.id)
+        for n_cand in [10, 20]
+            df_d = cal_distances(ds, n_cand, "div")
+            df_r = cal_distances(ds, n_cand, "random")
+
+            CSV.write("data/expresults/bc_td_distances/$(ds.id)_bcs_div_$(n_cand).csv", df_d)
+            CSV.write("data/expresults/bc_td_distances/$(ds.id)_bcs_random_$(n_cand).csv", df_r)
+        end
     end
 end
+
+#extract_all_distances_for_experiments()
+
+df_dist_r = cal_distances("data/synth_model_points_random_20.csv", datasets[1])
+df_dist_d = cal_distances("data/synth_model_points_div_20.csv", datasets[1])
+
+CSV.write("data/outlook/synth_model_distances_random_20.csv", df_dist_r)
+CSV.write("data/outlook/synth_model_distances_div_20.csv", df_dist_d)

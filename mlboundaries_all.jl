@@ -5,13 +5,15 @@ struct BoundaryExperiment
     df
     inputs
     output
+    rounds
 
-    BoundaryExperiment(name, file, inputs, output) = new(name, CSV.read(file, DataFrame), inputs, output)
+    BoundaryExperiment(name, file, inputs, output, rounds = 10) = new(name, CSV.read(file, DataFrame), inputs, output, rounds)
 end
 
 inputstotal(exp::BoundaryExperiment) = ncol(exp.df)-1
 inputsused(exp::BoundaryExperiment) = length(exp.inputs)
 outputalternatives(exp::BoundaryExperiment) = length(unique(exp.df[!, exp.output]))
+rounds(exp::BoundaryExperiment) = exp.rounds
 
 synth_exp = BoundaryExperiment("synth", "data/synth.csv", [:x1, :x2], :class)
 iris_exp = BoundaryExperiment("iris", "data/Iris.csv", [:SepalLengthCm, :SepalWidthCm, :PetalLengthCm, :PetalWidthCm], :Species)
@@ -20,8 +22,6 @@ wine_exp = BoundaryExperiment("wine", "data/wine.csv", [:Alcohol,:Malicacid,:Ash
 titanic_exp = BoundaryExperiment("titanic", "data/titanic_pp.csv", [:Pclass,:Sex,:Age,:SibSp,:Parch,:Fare], :Survived)
 car_exp = BoundaryExperiment("car", "data/car_evaluation_pp.csv", [:buyingprice,:maintenancecost,:doors,:capacity,:luggageboot,:safety], :decision)
 adult_exp = BoundaryExperiment("adult", "data/adult_pp.csv", [:age,:fnlwgt,:educationalnum,:gender,:capitalgain,:capitalloss,:hoursperweek], :income)
-# excluded because grades are on a 18? point scale
-#student_exp = BoundaryExperiment("student", "data/student_data_pp.csv", [:school, :sex, :age, :address,:famsize,:Pstatus,:Medu,:Fedu,:traveltime,:studytime,:failures,:schoolsup,:famsup,:paid,:activities,:nursery,:higher,:internet,:romantic,:famrel,:freetime,:goout,:Dalc,:Walc,:health,:absences, :G1, :G2], :G3)
 
 exps = [ adult_exp, car_exp, titanic_exp, wine_exp, synth_exp, iris_exp, heart_exp ]
 
@@ -31,15 +31,16 @@ for exp in exps
     be = BoundaryExposer(td, modelsut)
     
     for n_cand in [10, 20]
-        candidates = apply(be; iterations =n_cand, initial_candidates=10, optimizefordiversity=false)
-        df = todataframe(candidates, modelsut; output = exp.output)
-        CSV.write("data/expresults/$(exp.name)_bcs_random_$(n_cand).csv", df)
+        for r in rounds
+            candidates = apply(be; iterations =n_cand, initial_candidates=10, optimizefordiversity=false)
+            df = todataframe(candidates, modelsut; output = exp.output)
+            CSV.write("data/expresults/$(exp.name)_bcs_random_$(n_cand)_$r.csv", df)
 
-        candidates = apply(be; iterations=2000, initial_candidates=n_cand, add_new=false)
-        df = todataframe(candidates, modelsut; output = exp.output)
-        CSV.write("data/expresults/$(exp.name)_bcs_div_$(n_cand).csv", df)
+            candidates = apply(be; iterations=2000, initial_candidates=n_cand, add_new=false)
+            df = todataframe(candidates, modelsut; output = exp.output)
+            CSV.write("data/expresults/$(exp.name)_bcs_div_$(n_cand)_$r.csv", df)
+        end
     end
-
 end
 
 # -----------------------    LATEX TABLE        ----------------------------------------------

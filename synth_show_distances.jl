@@ -1,6 +1,6 @@
 using CSV, DataFrames, Statistics
 
-df = CSV.read("data/expresults/bc_td_distances/synth_bcs_div_20.csv", DataFrame)
+df = CSV.read("data/expresults/outlook/synth_model_distances_div_20.csv", DataFrame)
 
 using StatsPlots
 

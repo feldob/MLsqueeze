@@ -1,4 +1,4 @@
-using CSV, DataFrames ,MLsqueeze, DecisionTree
+using CSV, DataFrames ,MLsqueeze, DecisionTree, Statistics
 
 struct ExperimentPair
     id
@@ -23,18 +23,31 @@ function pp_df_for(epair, n_cand, method)
     return CSV.read(file, DataFrame)
 end
 
-function cal_distances(epair, n_cand, method)
-    df =pp_df_for(epair, n_cand, method)
-    nearestdists = two_nearest_neighbor_distances(df, epair.inputs)
+function cal_distances(epair, n_cand, method, dir)
+    files = filter(x -> occursin(r"^" * epair.id
+                * r"_bcs_"
+                * method
+                * r"_"
+                * string(n_cand)
+                * r"_\d*.csv$", x), readdir(dir))
+
+    nearestdists = zeros(Float64, 0,2)
+    for f in files
+        digs = digits(n_cand) |> length
+        ppfile = f[1:end-(digs+4)] * "_pp.csv"
+        if isfile(ppfile)
+            f = ppfile
+        end
+
+        df = CSV.read(joinpath(dir, f), DataFrame)
+        f_dists = two_nearest_neighbor_distances(df, epair.inputs)
+        nearestdists = vcat(nearestdists, f_dists)
+    end
+
     return sum(nearestdists, dims=2)
 end
 
-function cal_distances_stats(epair, n_cand, method)
-    df =pp_df_for(epair, n_cand, method)
-    return two_nearest_neighbor_distances_stats(df, epair.inputs)
-end
-
-function boxplots_distances(epairs, n_cand = 10)
+function boxplots_distances(epairs, dir = "data/expresults", n_cand = 20)
     local pl
 
     label_r = nothing
@@ -43,8 +56,8 @@ function boxplots_distances(epairs, n_cand = 10)
 
     i::Int = 1
     for epair in epairs
-        r_2nn = cal_distances(epair, n_cand, "random")
-        d_2nn = cal_distances(epair, n_cand, "div")
+        r_2nn = cal_distances(epair, n_cand, "random", dir)
+        d_2nn = cal_distances(epair, n_cand, "div", dir)
 
         min = minimum([minimum(r_2nn), minimum(d_2nn)])
         max = maximum([maximum(r_2nn), maximum(d_2nn)])
@@ -78,36 +91,39 @@ function boxplots_distances(epairs, n_cand = 10)
 end
 
 # create a latex table head with columns dataset, method, number of candidates
-function latex_table_head()
-    println("\\begin{tabular}{l|r|r|r}")
-    println("\\textbf{Dataset} & \\textbf{Candidates} & \\textbf{Method} & \\textbf{Distance} \\\\")
-    println("\\hline")
+function latex_table_head(io=stdout)
+    println(io, "\\begin{tabular}{l|r|r|r}")
+    println(io, "\\textbf{Dataset} & \\textbf{BC} & \\textbf{No Div} & \\textbf{Div} \\\\")
+    println(io, "\\hline")
 end
 
-function latex_table_distances(epairs)
-    latex_table_head()
+function latex_table_distances(epairs, io=stdout, dir="data/expresults")
+    latex_table_head(io)
     for epair in epairs
         for n_cand in [10, 20]
-            d_rand_nn_mean, d_rand_nn_sd = cal_distances_stats(epair, n_cand, "random")
-            d_div_nn_mean, d_div_nn_sd = cal_distances_stats(epair, n_cand, "div")
+            ds_r = cal_distances(epair, n_cand, "random", dir)
+            ds_d = cal_distances(epair, n_cand, "div", dir)
+
+            d_rand_nn_mean, d_rand_nn_sd = mean(ds_r), std(ds_r)
+            d_div_nn_mean, d_div_nn_sd = mean(ds_d), std(ds_d)
 
             if n_cand == 10
-                print("\\textbf{$(epair.id)} ")
+                print(io, "\\textbf{$(epair.id)} ")
             end
 
             # change the order of method and candidates to make it more readable
-            println("& $(n_cand) & div & $(round(d_div_nn_mean, digits=2)) ± $(round(d_div_nn_sd, digits=2)) \\\\")
-            println("& $(n_cand) & random & $(round(d_rand_nn_mean, digits=2)) ± $(round(d_rand_nn_sd, digits=2)) \\\\")
+            println(io, "& $(n_cand) & $(round(d_div_nn_mean, digits=2)) \$\\pm\$ $(round(d_div_nn_sd, digits=2)) & \\textbf{$(round(d_rand_nn_mean, digits=2))} \$\\pm\$ \\textbf{$(round(d_rand_nn_sd, digits=2))} \\\\")
         end
-        println("\\hline")
-        #TODO add LaTeX table output
+        println(io, "\\hline")
     end
 
-    # print latex table footer that ends the tabular
-    println("\\end{tabular}")
+    println(io, "\\end{tabular}")
 end
 
-#latex_table_distances(epairs)
+open("data/distance_table.tex", "w") do io
+    latex_table_distances(epairs, io)
+ end
 
 using StatsPlots
-pl = boxplots_distances(epairs)
+pl = boxplots_distances([epairs[1]])
+Plots.svg(pl, "data/distance_violin")
